@@ -108,8 +108,8 @@ You can change the radar parameters of the Gazebo simulation using dynamic recon
 rosrun rqt_reconfigure rqt_reconfigure
 ```
 
-Note: We are using the same set of parameters (configuration file) we used for the experiments in `radarays_ros`. Note: 
-- Some parameters are only used in the experiments but not in the Gazebo simulation.
+Note: We are using the same set of parameters (configuration file) we used for the experiments in `radarays_ros`:
+- Some parameters are only used in the experiments but not in the Gazebo simulation
 - For the sake of performance, the Gazebo plugin does not consider the robot's motion while simulating a polar image. (we will add this in the future)
 
 ## Known Issues
