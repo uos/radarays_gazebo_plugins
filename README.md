@@ -1,92 +1,116 @@
 # radarays_gazebo_plugins
 
+[radarays_ros](https://github.com/uos/radarays_ros) Gazebo plugin.
 
+## Dependencies
 
-## Getting started
+- rmagine (embree / optix backend)
+- rmagine_gazebo_plugins
+- radarays_ros
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Raytracing acceleration structure - World file
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+For constructing and continuously updating the acceleration structure for ray tracing, add the following lines to your world files:
 
-## Add your files
+```xml
+<sdf version="1.4">
+<world name="default">
 
-- [ ] [Create](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#create-a-file) or [upload](https://docs.gitlab.com/ee/user/project/repository/web_editor.html#upload-a-file) files
-- [ ] [Add files using the command line](https://docs.gitlab.com/ee/gitlab-basics/add-file.html#add-a-file-using-the-command-line) or push an existing Git repository with the following command:
+...
 
+<!-- CPU: Embree Map Plugin -->
+<plugin name='rmagine_embree_map' filename='librmagine_embree_map_gzplugin.so'>
+  <update>
+    <delta_trans>0.001</delta_trans>
+    <delta_rot>0.001</delta_rot>
+    <delta_scale>0.001</delta_scale>
+    <rate_limit>200</rate_limit>
+  </update>
+</plugin>
+
+<!-- Optix Map Plugin -->
+<plugin name='rmagine_optix_map' filename='librmagine_optix_map_gzplugin.so'>
+  <update>
+    <delta_trans>0.001</delta_trans>
+    <delta_rot>0.001</delta_rot>
+    <delta_scale>0.001</delta_scale>
+    <rate_limit>500</rate_limit>
+  </update>
+</plugin>
+
+...
+
+</world>
+</sdf>
 ```
-cd existing_repo
-git remote add origin https://gitlab.informatik.uni-osnabrueck.de/amock/radarays_gazebo_plugins.git
-git branch -M main
-git push -uf origin main
+
+See [rmagine_gazebo_plugins](https://github.com/uos/rmagine_gazebo_plugins) for further explanations on that.
+
+## Materials
+
+You can assign so called `radarays_materials` to visuals of a model. An example is in `worlds/avz_collada.world`:
+
+```xml
+...
+<model name="avz_map">
+  <static>true</static>
+  <link name="avz_map_link">
+    <pose>0 0 0 0 0 0</pose>
+    <visual name="avz_map_visual">
+      <cast_shadows>false</cast_shadows>
+      <geometry>
+        <mesh>
+            <uri>./avz_no_roof.stl</uri>
+            <scale>1.0 1.0 1.0</scale>
+        </mesh>
+      </geometry>
+      <radarays_material>
+        <velocity>0.0</velocity>
+        <ambient>1.0</ambient>
+        <diffuse>0.0</diffuse>
+        <specular>3000.0</specular>
+      </radarays_material>
+    </visual>
+...
 ```
 
-## Integrate with your tools
+## Examples
 
-- [ ] [Set up project integrations](https://gitlab.informatik.uni-osnabrueck.de/amock/radarays_gazebo_plugins/-/settings/integrations)
+Important files are:
+- urdf/robot_radar_cpu.urdf -> URDF for a robot with a radar sensor simulated on CPU
+- urdf/robot_radar_gpu.urdf -> URDF for a robot with a radar sensor simulated on GPU
+- worlds/avz_collada.world -> Gazebo world-file that contains a mesh of an office with `radarays_materials` attached to it.
 
-## Collaborate with your team
+### example_robot.launch
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
-- [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
-- [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
-- [ ] [Set auto-merge](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
+Example for a robot that is spawned in a office-like environment, with `radarays_materials` attached to it. 
 
-## Test and Deploy
+Run CPU version of radarays with Gazebo by calling
 
-Use the built-in continuous integration in GitLab.
+```console
+roslaunch radarays_gazebo_plugins example_robot.launch rmagine:=embree
+```
 
-- [ ] [Get started with GitLab CI/CD](https://docs.gitlab.com/ee/ci/quick_start/index.html)
-- [ ] [Analyze your code for known vulnerabilities with Static Application Security Testing(SAST)](https://docs.gitlab.com/ee/user/application_security/sast/)
-- [ ] [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/ee/topics/autodevops/requirements.html)
-- [ ] [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/ee/user/clusters/agent/)
-- [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
+Run GPU version of radarays with Gazebo by calling
 
-***
+```console
+roslaunch radarays_gazebo_plugins example_robot.launch rmagine:=optix
+```
 
-# Editing this README
+![Teaser](media/radarays_gazebo_plugin.png)
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thank you to [makeareadme.com](https://www.makeareadme.com/) for this template.
 
-## Suggestions for a good README
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Radar Parameters
 
-## Name
-Choose a self-explaining name for your project.
+You can change the radar parameters of the Gazebo simulation using dynamic reconfigure:
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+```console
+rosrun rqt_reconfigure rqt_reconfigure
+```
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+Note: We are using the same set of parameters (configuration file) we used for the experiments in `radarays_ros`. Note: 
+- Some parameters are only used in the experiments but not in the Gazebo simulation.
+- For the sake of performance, the Gazebo plugin does not consider the robot's motion while simulating a polar image. (we will add this in the future)
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
-
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
-
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
-
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
-
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
-
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
-
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
-
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
-
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
-
-## License
-For open source projects, say how it is licensed.
-
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+## Known Issues
+- At some point I got a segmentation fault when using rmagine's CPU simulators inside of the Gazebo threads. Unfortunately, I couldn't reproduce those errors.

@@ -1,0 +1,89 @@
+<?xml version="1.0" ?> 
+<launch>
+
+    <arg name="rmagine" default="embree" />
+    <arg name="world" default="$(find radarays_gazebo_plugins)/worlds/avz_collada.world"/>
+    <arg name="paused" default="false"/>
+    <arg name="use_sim_time" default="true"/>
+    <arg name="extra_gazebo_args" default=""/>
+    <arg name="gui" default="true"/>
+    <arg name="recording" default="false"/>
+
+    <!-- Robot pose -->
+    <arg name="x" default="0"/>
+    <arg name="y" default="0"/>
+    <arg name="z" default="0"/>
+    <arg name="roll" default="0"/>
+    <arg name="pitch" default="0"/>
+    <arg name="yaw" default="0"/>
+
+    <!-- Note that 'headless' is currently non-functional.  See gazebo_ros_pkgs issue #491 (-r arg does not disable
+        rendering, but instead enables recording). The arg definition has been left here to prevent breaking downstream
+        launch files, but it does nothing. -->
+    <arg name="headless" default="false"/>
+
+    <arg name="debug" default="false"/>
+    <arg name="physics" default="ode"/>
+    <arg name="verbose" default="true"/>
+    <arg name="respawn_gazebo" default="false"/>
+    <arg name="use_clock_frequency" default="false"/>
+    <arg name="pub_clock_frequency" default="100"/>
+    <arg name="enable_ros_network" default="true" />
+
+    <!-- set use_sim_time flag -->
+    <param name="/use_sim_time" value="$(arg use_sim_time)"/>
+
+    <!-- set command arguments -->
+    <arg unless="$(arg paused)" name="command_arg1" value=""/>
+    <arg     if="$(arg paused)" name="command_arg1" value="-u"/>
+    <arg unless="$(arg recording)" name="command_arg2" value=""/>
+    <arg     if="$(arg recording)" name="command_arg2" value="-r"/>
+    <arg unless="$(arg verbose)" name="command_arg3" value=""/>
+    <arg     if="$(arg verbose)" name="command_arg3" value="--verbose"/>
+    <arg unless="$(arg debug)" name="script_type" value="gzserver"/>
+    <arg     if="$(arg debug)" name="script_type" value="debug"/>
+
+    <!-- start gazebo server-->
+    <group if="$(arg use_clock_frequency)">
+        <param name="gazebo/pub_clock_frequency" value="$(arg pub_clock_frequency)" />
+    </group>
+    <group>
+        <param name="gazebo/enable_ros_network" value="$(arg enable_ros_network)" />
+    </group>
+    <node name="gazebo" pkg="gazebo_ros" type="$(arg script_type)" respawn="$(arg respawn_gazebo)" output="screen"
+          args="-s libradarays_embree_sensors_gzregister.so -s libradarays_optix_sensors_gzregister.so $(arg command_arg1) $(arg command_arg2) $(arg command_arg3) -e $(arg physics) $(arg extra_gazebo_args) $(arg world)">
+    </node>
+
+    <!-- start gazebo client -->
+    <group if="$(arg gui)">
+        <node name="gazebo_gui" pkg="gazebo_ros" type="gzclient" respawn="false" output="screen" args="$(arg command_arg3)"/>
+    </group>
+
+    <!-- upload robot -->
+    <group if="$(eval arg('rmagine') == 'embree')">
+        <param name="robot_description" command="$(find xacro)/xacro '$(find radarays_gazebo_plugins)/urdf/robot_radar_cpu.urdf.xacro'" />
+    </group>
+
+    <group if="$(eval arg('rmagine') == 'optix')">
+        <param name="robot_description" command="$(find xacro)/xacro '$(find radarays_gazebo_plugins)/urdf/robot_radar_gpu.urdf.xacro'" />
+    </group>
+
+    <!-- push robot_description to factory and spawn robot in gazebo -->
+    <node name="spawn_robot_model" pkg="gazebo_ros" type="spawn_model"
+        args="-urdf -param robot_description -model robot_sensor
+            -x $(arg x) -y $(arg y) -z $(arg z)
+            -R $(arg roll) -P $(arg pitch) -Y $(arg yaw)"
+        respawn="false" output="screen">
+    </node>
+
+    <!-- Robot state publisher -->
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher">
+        <param name="publish_frequency" type="double" value="100.0" />
+        <param name="tf_prefix" type="string" value="" />
+    </node>
+
+      <!-- Joint State Publisher -->
+    <node pkg="joint_state_publisher" type="joint_state_publisher" name="joint_state_publisher">
+    </node>
+
+</launch>
