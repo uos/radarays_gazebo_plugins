@@ -68,13 +68,16 @@
   value="${0.2 + radar_height/2}"/>
 
 
-
+<gazebo>
+    <rmagine_ignore/>
+</gazebo>
 
 <link name="base_footprint" />
 
-<gazebo reference="base_footprint">
+<!-- TODO: should work. Doesnt work -->
+<!-- <gazebo reference="base_footprint">
   <rmagine_ignore />
-</gazebo>
+</gazebo> -->
 
 <link name="base_link">
     <visual>

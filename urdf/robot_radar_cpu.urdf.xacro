@@ -68,13 +68,16 @@
   value="${0.2 + radar_height/2}"/>
 
 
-
+<gazebo>
+    <rmagine_ignore/>
+</gazebo>
 
 <link name="base_footprint" />
 
-<gazebo reference="base_footprint">
-  <rmagine_ignore />
-</gazebo>
+<!-- TODO: should work. Doesnt work -->
+<!-- <gazebo reference="base_footprint">
+  <rmagine_ignore/>
+</gazebo> -->
 
 <link name="base_link">
     <visual>
@@ -257,7 +260,6 @@
 </joint>
 
 <gazebo reference="radar">
-
   <sensor type="radarays_embree" name="radar">
     <pose>0 0 0 0 0 0</pose>
     <always_on>true</always_on>

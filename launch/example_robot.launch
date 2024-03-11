@@ -22,7 +22,7 @@
         launch files, but it does nothing. -->
     <arg name="headless" default="false"/>
 
-    <arg name="debug" default="true"/>
+    <arg name="debug" default="false"/>
     <arg name="physics" default="ode"/>
     <arg name="verbose" default="true"/>
     <arg name="respawn_gazebo" default="false"/>

@@ -157,6 +157,13 @@ void RadaRaysOptix::uploadBuffers()
 
 void RadaRaysOptix::searchForMaterials()
 {
+    // TODO:
+    // This is done only once.
+    // This has to everytime the map was updated
+    // Or better:
+    // - for every added or removed object
+    // - only search for materials of the added object
+
     m_object_materials.resize(0);
     m_params.materials.data.resize(1);
     radarays_ros::RadarMaterial material_air;
@@ -165,8 +172,6 @@ void RadaRaysOptix::searchForMaterials()
     material_air.diffuse  = 0.0;
     material_air.specular = 1.0;
     m_params.materials.data[0] = material_air;
-
-
 
     sdf::ElementPtr world_sdf = this->world->SDF();
     sdf::ElementPtr model_sdf = world_sdf->GetElement("model");
@@ -183,7 +188,6 @@ void RadaRaysOptix::searchForMaterials()
         {
             std::string link_name = link_sdf->GetAttribute("name")->GetAsString();
             
-        
             for(sdf::ElementPtr vis_sdf = link_sdf->GetElement("visual");
                 vis_sdf;
                 vis_sdf = vis_sdf->GetNextElement("visual"))
@@ -211,9 +215,7 @@ void RadaRaysOptix::searchForMaterials()
                     material.specular = 3000.0;
                 }
                     
-
                 // figure out id in map
-
                 std::string name = model_name + "::" + link_name + "::" + vis_name;
 
                 // find model in optix_map
@@ -441,11 +443,9 @@ void RadaRaysOptix::simulate(rm::Transform Tsm)
     // std::cout << "Done filling model" << std::endl;
 
     // going to GPU
-
     // 1. preallocate everything necessary
 
     // m_sim->preBuildProgram<ResT>();
-
     // std::cout << "Prealloc memory buffers - start" << std::endl;
 
     // pass 1
@@ -460,8 +460,13 @@ void RadaRaysOptix::simulate(rm::Transform Tsm)
    
     
     // rm::Transform Tsm = Tsm_last;
-    rm::Memory<rm::Transform> Tsms(1);
-    Tsms[0] = Tsm;
+    rm::Memory<rm::Transform, rm::VRAM_CUDA> Tsms_;
+    { // upload
+        rm::Memory<rm::Transform> Tsms(1);
+        Tsms[0] = Tsm;
+        Tsms_ = Tsms;
+    }
+
     // std::cout << "Start Simulation from pose: " << Tsm << std::endl;
 
     // m_sim->setModel(m_waves_gpu[0]);
@@ -508,7 +513,7 @@ void RadaRaysOptix::simulate(rm::Transform Tsm)
                 //     m_map_mutex->lock_shared();
                 // }
                 
-                m_sim->simulate(Tsms, m_results[i]);
+                m_sim->simulate(Tsms_, m_results[i]);
 
                 // if(m_map_mutex)
                 // {
@@ -796,6 +801,7 @@ bool RadaRaysOptix::UpdateImpl(const bool _force)
     // std::cout << "RADARAYS UPDATE" << std::endl;
     auto pose = this->parentEntity->WorldPose();
     rm::Transform Tbm = to_rm(pose);
+
     rm::Transform Tsm = Tbm * m_Tsb;
 
     // std::cout << "World Pose of sensor: " << Tsm << std::endl;
