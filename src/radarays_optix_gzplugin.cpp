@@ -69,10 +69,6 @@ RadaRaysOptix::~RadaRaysOptix()
 void RadaRaysOptix::loadParamsSDF()
 {
     // sdf::ElementPtr rayElem = this->sdf->GetElement("ray");
-
-    
-    
-
 }
 
 void RadaRaysOptix::loadParams()
@@ -107,6 +103,8 @@ void RadaRaysOptix::loadParams()
         m_params.materials.data[1] = material_wall_stone;
     }
 
+    // not allowed to place more than 100 objects.
+    // TODO: make this more dynamic
     size_t n_default_objects = 100;
 
     m_object_materials.resize(n_default_objects);
@@ -116,22 +114,11 @@ void RadaRaysOptix::loadParams()
     }
 
     // find real materials
-
-
-    // this->sdf->GetElement("ray");
-
-
     m_polar_image = cv::Mat_<unsigned char>(0, m_radar_model.theta.size);
-
-
-
-
-    loadParamsSDF();
-
-
-
-    // material properties
     
+    // TODO: load radar params from URDF
+    // currently only via rqt_reconfigure
+    loadParamsSDF();
     
     // TODO:
     // this is how it was in a static environment:
@@ -147,10 +134,6 @@ void RadaRaysOptix::loadParams()
     // 
     // Or maybe: For each object spawn something is added to 
     //   dynamic reconfigure?
-
-
-
-
 
     // TODO: load additional params from gazebo - xml (instead of ros paremeters)
 }
@@ -288,6 +271,7 @@ void RadaRaysOptix::searchForMaterials()
         // full_name = model/link/...
         // put full name to optix map elements and compare instead
         // thus, we can apply materials to model parts
+        // TODO: Check if previous TODO is done already.
     }
 
     uploadBuffers();
@@ -517,7 +501,21 @@ void RadaRaysOptix::simulate(rm::Transform Tsm)
             {
                 m_sim->setModel(m_waves_gpu[i]);
                 // std::cout << "[RadaRaysOptix] Simulate Signals - pass " << i+1 << std::endl;
+                
+                // if(m_map_mutex)
+                // {
+                //     std::cout << "RADARAYS: Lock Map" << std::endl;
+                //     m_map_mutex->lock_shared();
+                // }
+                
                 m_sim->simulate(Tsms, m_results[i]);
+
+                // if(m_map_mutex)
+                // {
+                //     std::cout << "RADARAYS: Unlock Map" << std::endl;
+                //     m_map_mutex->unlock_shared();
+                // }
+
                 // cudaDeviceSynchronize();
                 // el = sw(); el_tot += el;
                 // std::cout << "- ray cast: " << el*1000.0 << "ms" << std::endl;
@@ -776,11 +774,11 @@ bool RadaRaysOptix::UpdateImpl(const bool _force)
 
         if(!m_sim)
         {
-            m_map->context()->getCudaContext()->use();
+            // m_map->context()->getCudaContext()->use();
             m_sim = std::make_shared<rm::OnDnSimulatorOptix>(m_map);
             std::cout << "[RadaRaysOptix] OnDnSimulator constructed." << std::endl;
             
-            m_sim->setMap(m_map);
+            // m_sim->setMap(m_map);
             m_sim->setTsb(rm::Transform::Identity());
             std::cout << "[RadaRaysOptix] OnDnSimulator map set." << std::endl;
             
@@ -806,7 +804,7 @@ bool RadaRaysOptix::UpdateImpl(const bool _force)
         m_map_mutex->lock_shared();
     }
 
-    m_map->context()->getCudaContext()->use();
+    // m_map->context()->getCudaContext()->use();
 
     // fill global simulation buffer
     simulate(Tsm);
